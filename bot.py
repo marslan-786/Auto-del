@@ -10,7 +10,7 @@ from telegram.ext import (
     filters,
 )
 
-BOT_TOKEN = "7459204571:AAEo-CD_K9FjOPiKdg3gXSvAOat55h37Y0Q"
+BOT_TOKEN = "8379689787:AAGI5bl8zguDG0W26QlCkdsbnblszIxvo54"
 
 channel_timers = {}
 
