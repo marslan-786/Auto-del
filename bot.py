@@ -11,7 +11,7 @@ from telegram.ext import (
     filters,
 )
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+BOT_TOKEN = "8379689787:AAGI5bl8zguDG0W26QlCkdsbnblszIxvo54"
 
 channel_timers = {}
 
