@@ -9,6 +9,7 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
+    CallbackContext,
 )
 
 BOT_TOKEN = "8379689787:AAGI5bl8zguDG0W26QlCkdsbnblszIxvo54"
@@ -71,7 +72,8 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
             await context.bot.delete_message(chat_id=chat_id, message_id=message.message_id)
             print(f"🗑️ Deleted message {message.message_id} from @{chat_username} after {timer}s")
         except Exception as e:
-            print(f"❌ Failed to delete message {message.message_id}: {e}")
+            # Safe ignore (اگر میسج پہلے سے delete ہو تو)
+            print(f"⚠️ Could not delete message {message.message_id}: {e}")
     except Exception as e:
         print("⚠️ Error in handle_channel_post:", e)
         traceback.print_exc()
@@ -87,11 +89,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("⚠️ Error in start:", e)
         traceback.print_exc()
 
+# ✅ Global error handler (ہر طرح کے error کو پکڑ لے گا)
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        print("⚠️ Global error:", context.error)
+        traceback.print_exception(type(context.error), context.error, context.error.__traceback__)
+    except Exception as e:
+        print("⚠️ Error in error_handler:", e)
+
 # 🧠 App setup
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("set", set_timer))
 app.add_handler(MessageHandler(filters.ALL, handle_channel_post))
+
+# Register global error handler
+app.add_error_handler(error_handler)
 
 if __name__ == "__main__":
     print("🤖 Bot is running...")
