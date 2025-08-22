@@ -9,8 +9,8 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
-    CallbackContext,
 )
+from telegram.error import BadRequest
 
 BOT_TOKEN = "8379689787:AAGI5bl8zguDG0W26QlCkdsbnblszIxvo54"
 
@@ -54,6 +54,24 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("⚠️ Error in set_timer:", e)
         traceback.print_exc()
 
+# ✅ Safe delete function
+async def safe_delete(bot, chat_id, message_id, channel, timer):
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+        print(f"🗑️ Deleted message {message_id} from @{channel} after {timer}s")
+    except BadRequest as e:
+        if "message to delete not found" in str(e).lower():
+            print(f"⚠️ Message {message_id} already deleted in @{channel}, skipping...")
+        else:
+            print(f"⚠️ Could not delete message {message_id}: {e}")
+    except Exception as e:
+        print(f"⚠️ Unexpected error while deleting {message_id}: {e}")
+
+# ✅ Background task for delayed delete
+async def task_delete_message(bot, chat_id, message_id, channel, timer):
+    await asyncio.sleep(timer)
+    await safe_delete(bot, chat_id, message_id, channel, timer)
+
 # ✅ Channel Post Handler
 async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -67,13 +85,9 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         timer = channel_timers.get(f"@{chat_username}", 60)  # default 60 sec
 
-        await asyncio.sleep(timer)
-        try:
-            await context.bot.delete_message(chat_id=chat_id, message_id=message.message_id)
-            print(f"🗑️ Deleted message {message.message_id} from @{chat_username} after {timer}s")
-        except Exception as e:
-            # Safe ignore (اگر میسج پہلے سے delete ہو تو)
-            print(f"⚠️ Could not delete message {message.message_id}: {e}")
+        # Background میں چلاؤ تاکہ main loop block نہ ہو
+        asyncio.create_task(task_delete_message(context.bot, chat_id, message.message_id, chat_username, timer))
+
     except Exception as e:
         print("⚠️ Error in handle_channel_post:", e)
         traceback.print_exc()
@@ -89,7 +103,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("⚠️ Error in start:", e)
         traceback.print_exc()
 
-# ✅ Global error handler (ہر طرح کے error کو پکڑ لے گا)
+# ✅ Global error handler
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         print("⚠️ Global error:", context.error)
